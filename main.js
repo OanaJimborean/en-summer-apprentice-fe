@@ -1,6 +1,8 @@
 
+import { removeLoader, addLoader } from './src/components/loader';
 import {usesStyles} from './src/components/styles';
 import { addPurchase, kebabCase } from './src/utils';
+import {createOrderItems} from './src/components/createOrderItem';
 // Navigate to a specific URL
 function navigateTo(url) {
   history.pushState(null, null, url);
@@ -17,13 +19,32 @@ function getHomePageTemplate() {
   `;
 }
 
+
 function getOrdersPageTemplate() {
   return `
     <div id="content">
-    <h1 class="text-2xl mb-4 mt-8 text-center">Purchased Tickets</h1>
-    </div>
+      <h1 class="text-2xl mb-4 mt-8 text-center">Purchased Tickets</h1>
+      <div class="purchases ml-6 mr-6">
+              <div class="bg-white px-4 py-3 gap-x-4 flex font-bold">
+                  <button class="flex flex-1 text-center justify-center" id="sorting-button-1"> 
+                      <span >Name</span>
+                      <i class="fa-solid fa-arrow-up-wide-short text-xl" id="sorting-icon-1"></i> 
+                  </button>
+                  <span class="flex-1">Nr tickets</span>
+                  <span class="flex-1">Category</span>
+                  <span class="flex-1 md: flex">Date</span>
+                  <button class="md:flex text-center justify-center" id="sorting-button-2"> 
+                      <span>Price</span>
+                      <i class="fa-solid fa-arrow-up-wide-short text-xl" id="sorting-icon-2"></i> 
+                  </button>
+                  <span class="w-28 sm: w-8"></span>
+              </div>
+              <div id="purchases-content">
+              </div>
+        </div>
+      </div>
   `;
-}
+  }
 
 function setupNavigationEvents() {
   const navLinks = document.querySelectorAll('nav a');
@@ -59,13 +80,20 @@ function setupInitialPage() {
   renderContent(initialUrl);
 }
 
+let events = [];
+
 function renderHomePage() {
   const mainContentDiv = document.querySelector('.main-content-component');
   mainContentDiv.innerHTML = getHomePageTemplate();
 
-  //console.log('')
+  addLoader();
+
   fetchTicketEvents().then((data) => {
-    addEvents(data);
+    events = data;
+    setTimeout(()=>{
+      removeLoader();
+    }, 1300);
+    addEvents(events);
   });
   // // Sample hardcoded event data
   // const eventData = {
@@ -89,6 +117,19 @@ async function fetchTicketEvents(){
 
 }
 
+async function getTicketCategories(){
+  const response = await fetch('http://localhost:8080/api/ticketCategories');
+  return await response.json();
+
+}
+
+async function fetchOrders(customerID){
+  const response = await fetch(`http://localhost:8080/orders/getByUserID/${customerID}`);
+ 
+  const data = await response.json();
+  return data;
+}
+
   const addEvents = (events) => {
     const eventsDiv = document.querySelector('.events');
     eventsDiv.innerHTML = 'No events';
@@ -108,7 +149,7 @@ async function fetchTicketEvents(){
   };
 
   const createEventElement = (eventData, title) => {
-    const {id, eventDescription, img, eventName, ticketCategory, startDate, endDate, venueDTO} = eventData;
+    const {eventID, eventDescription, img, eventName, ticketCategory, startDate, endDate, venueDTO} = eventData;
     const eventDiv = document.createElement('div');
     const eventWrapperClasses = usesStyles('eventWrapper');
     const actionsWrapperClasses = usesStyles('actionsWrapper');
@@ -132,10 +173,10 @@ async function fetchTicketEvents(){
         <h2 class="event-title text=2xl font-bold">${eventName}</h2>
     </header>
     <div class="content">
-      <img src="${img}" class="event-image w-full height-200 rounded"
-      <p class="description text-gray-700 text-center text-sm">${eventDescription}</p>
-      <p class="date text-gray-700 text-sm text-center">Date: ${formattedStartDate} - ${formattedEndDate}</p>
-      <p class="venue text-gray-700 text-center text-sm">Location: ${venueDTO.location}</p>
+      <img src="${getEventImageSrc(eventName)}" class="event-image w-full height-200 rounded"></img>
+      <p class="description ">${eventDescription}</p>
+      <p class="date text-gray-700 text-sm">Date: ${formattedStartDate} - ${formattedEndDate}</p>
+      <p class="venue text-gray-700 text-sm">Location: ${venueDTO.location}</p>
     </div>
     `;
   eventDiv.innerHTML = contentMarkup;
@@ -146,19 +187,28 @@ async function fetchTicketEvents(){
 
   const categoriesOptions = ticketCategory.map((category) =>
   `<option value=${category.ticketCategoryID}>${category.description}</option>`);
+  console.log(categoriesOptions);
 
-  const ticketSection = createSectionWithIcon('./src/assets/icons/ticket.png', `
-  <select id="ticketType" name="ticketType" class="select ${title}-ticket-type text-sm bg-white border border-gray-300 rounded px-2 py-1 ">
-    ${categoriesOptions.join('\n')}
-  </select>
 
-`);
+  const locationSection = createSectionWithIcon('./src/assets/stellar.jpg', `<p class="event-location ">${venueDTO.location}</p>`);
 
-  const ticketTypeMarkup = `
-      <h2 class="text-lg font-bold mb-2">Choose Ticket Type:</h2>
-      <select id="ticketType" name="ticketType"> 
+  const descSection = createSectionWithIcon('./src/assets/stellar.jpg', `<p class="event-description ">${eventDescription}</p>`);
+  
+  const ticketSection = createSectionWithIcon('./src/assets/stellar.jpg', `
+    <select id="ticketType" name="ticketType" class="select ${title}-ticket-type text-sm bg-white border border-gray-300 rounded px-2 py-1 ">
       ${categoriesOptions.join('\n')}
-      </select>`;
+    </select>
+  `);
+
+  const allSectionsMarkup = descSection + locationSection + ticketSection;
+  actions.innerHTML = allSectionsMarkup;
+  
+  const ticketTypeMarkup = `
+  <h2 class="text-lg font-bold mb-2 text-white-chooseTicket">Choose Ticket Type:</h2>
+  <select id="ticketType" name="ticketType" class="${title}-ticket-type text-sm bg-white border border-gray-300 rounded px-2 py-1 ">
+    ${categoriesOptions.join('\n')}
+  </select>`;
+
 
       console.log(categoriesOptions);
 
@@ -239,7 +289,7 @@ async function fetchTicketEvents(){
   addToCart.disabled = true;
 
   addToCart.addEventListener('click', () => {
-  handleAddToCart (title, id, input, addToCart);
+  handleAddToCart (title, eventID, input, addToCart);
 });
   eventFooter.appendChild(addToCart);
   eventDiv.appendChild(eventFooter);
@@ -248,20 +298,53 @@ async function fetchTicketEvents(){
     
   };
 
-const handleAddToCart = (title, id, input, addToCart) => {
-  const ticketType = document.querySelector(`.${kebabCase(title)}-ticket-type`).value;
+  function getEventImageSrc(eventName) {
+    switch (eventName) {
+      case 'Untold':
+        return './src/assets/untold.jpg';
+      case 'Electric Castle':
+        return './src/assets/electriccastle.jpg';
+      case 'Meci de Fotbal':
+        return './src/assets/football.jpg';
+      case 'Wine Festival':
+        return './src/assets/wine.jpg';
+      default:
+        return './src/assets/wine.jpg'; 
+    }
+  }
+
+  function createSectionWithIcon(iconSrc, content) {
+    const imgIcon = document.createElement('img');
+    imgIcon.src = iconSrc;
+    imgIcon.alt = 'Icon';
+    imgIcon.classList.add(...usesStyles('imgicon'));
+    imgIcon.style.height = '25px';
+    imgIcon.style.width = '25px';
+  
+    return `
+      <div class="flex items-center">
+        ${imgIcon.outerHTML}
+        ${content}
+      </div>
+    `;
+  }
+
+
+const handleAddToCart = (title, eventID, input, addToCart) => {
+  const ticketType = document.querySelector(`.${title}-ticket-type`).value;
   const quantity = input.value;
   if(parseInt(quantity)){
-    const customerID = 1;
-    fetch(`http://localhost:8080/orders/getByUserID/${customerID}`,{
-      methot:"POST",
+    const customerID = 2;
+    addLoader();
+    fetch(`http://localhost:8080/orders/${customerID}`,{
+      method:"POST",
       headers:{
-        "Content-Type":"application/json",
+        "Content-Type": "application/json",
       },
       body:JSON.stringify({
-        ticketType:+ticketType,
-        eventID: id,
-        quantity:+quantity,
+        ticketCategoryID:+ticketType,
+        eventID: eventID,
+        numberOfTickets:+quantity,
 
       })
     }).then((response)=>{
@@ -276,7 +359,18 @@ const handleAddToCart = (title, id, input, addToCart) => {
       console.log("Done!");
       input.value = 0;
       addToCart.disabled = true;
-    });
+      toastr.success('Success!')
+    })
+      .catch(error => {
+        console.log('mesaj specific');
+        toastr.error('Error!')
+      })
+      .finally(() => {
+        setTimeout(()=>{
+        removeLoader();
+      }, 1000);
+    })
+
   }else{
     //Not integer. To be treated
   }
@@ -285,6 +379,24 @@ const handleAddToCart = (title, id, input, addToCart) => {
 function renderOrdersPage(categories) {
   const mainContentDiv = document.querySelector('.main-content-component');
   mainContentDiv.innerHTML = getOrdersPageTemplate();
+  const purchaseDiv = document.querySelector('.purchases');
+  const purchaseContent = document.getElementById('purchases-content');
+  addLoader();
+  if(purchaseDiv) {
+    
+    fetchOrders(2).then((orders)=>{
+      if(orders.length){
+        setTimeout(()=>{
+          removeLoader();
+        }, 1000);
+        orders.forEach((order)=>{
+          const newOrder = createOrderItems(categories,order);
+          purchaseContent.appendChild(newOrder);
+        });
+        purchaseDiv.appendChild(purchaseContent)
+      }else removeLoader();
+    })
+  }
 }
 
 // Render content based on URL
@@ -295,9 +407,16 @@ function renderContent(url) {
   if (url === '/') {
     renderHomePage();
   } else if (url === '/orders') {
-    renderOrdersPage()
+    getTicketCategories().then((categories)=> {
+      renderOrdersPage(categories);
+    })
+    .catch((error => {
+      console.error('Error fetching ticket categories:', error);
+    }))
   }
 }
+
+
 
 // Call the setup functions
 setupNavigationEvents();
