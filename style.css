@@ -1,12 +1,23 @@
 body {
   font-family: 'Roboto', sans-serif;
+  background: linear-gradient(to bottom, #f0f0f0, #333333); /* Adjust colors as needed */
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 p{
   color:white;
 }
+
+.input-container {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0; /* Adjust margin as needed */
+}
+
 .events {
   justify-content: center;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 h1 {
@@ -44,7 +55,7 @@ h1 {
 }
 
 #page-header {
-  background-color: #fff;
+  background-color: #C08CD7;
   position: sticky;
   top: 0;
 }
@@ -75,11 +86,12 @@ h1 {
 
 .event-card {
   background-color: #ffffff;
-  border-radius: 8px;
+  border-radius: 160px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 16px;
   margin: 16px;
   color: white;
+  width: 300px;
 }
 
 .card-content {
@@ -87,6 +99,10 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
+}
+
+.event {
+  font-size: 20px;
 }
 
 .event-title {
@@ -128,6 +144,40 @@ h1 {
 
 .text-white-chooseTicket {
   color: rgb(255, 173, 173);
+}
+
+.container-example{
+  width: 320px;
+  background-color: blue;
+}
+
+.element-example{
+  background-color: white;
+}
+
+.ticket-categories{
+  margin-top: 8px;
+  text-align: center;
+  color: white;
+}
+
+
+
+#filter-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add box-shadow */
+}
+
+
+/* Style the icon */
+#filter-name .fa-search {
+  color: #de411b;
 }
 
 

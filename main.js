@@ -1,7 +1,7 @@
 
 import { removeLoader, addLoader } from './src/components/loader';
 import {usesStyles} from './src/components/styles';
-import { addPurchase, kebabCase } from './src/utils';
+import { addPurchase, kebabCase} from './src/utils';
 import {createOrderItems} from './src/components/createOrderItem';
 // Navigate to a specific URL
 function navigateTo(url) {
@@ -11,13 +11,16 @@ function navigateTo(url) {
 // HTML templates
 function getHomePageTemplate() {
   return `
-   <div id="content" >
-      <img src="./src/assets/Endava.png" alt="summer">
-      <div class="events flex items-center justify-center flex-wrap">
+    <div id="content">
+      <div class="input-container flex justify-center items-center">
+        <input type="text" id="filter-name" placeholder="Filter by name">
       </div>
+      <div class="events flex items-center justify-center flex-wrap"></div>
     </div>
   `;
 }
+
+
 
 
 function getOrdersPageTemplate() {
@@ -39,6 +42,7 @@ function getOrdersPageTemplate() {
                   </button>
                   <span class="w-28 sm: w-8"></span>
               </div>
+              
               <div id="purchases-content">
               </div>
         </div>
@@ -80,6 +84,33 @@ function setupInitialPage() {
   renderContent(initialUrl);
 }
 
+function liveSearch(){
+  const filterInput = document.querySelector('#filter-name');
+
+  if(filterInput){
+    const searchValue = filterInput.value;
+
+    if(searchValue !== undefined) {
+      const filteredEvents = events.filter((event) => 
+      event.eventName.toLowerCase().includes(searchValue.toLowerCase()));
+
+      addEvents(filteredEvents);
+    }
+  }
+}
+
+function setupFilterEvents(){
+  const nameFilterInput = document.querySelector('#filter-name');
+
+  if(nameFilterInput) {
+    const filterInterval = 500;
+    nameFilterInput.addEventListener('keyup', () => {
+    setTimeout(liveSearch(), filterInterval);
+  });
+}
+}
+
+
 let events = [];
 
 function renderHomePage() {
@@ -95,18 +126,6 @@ function renderHomePage() {
     }, 1300);
     addEvents(events);
   });
-  // // Sample hardcoded event data
-  // const eventData = {
-  //   id: 1,
-  //   description: 'Word Capital of Night and Magic.',
-  //   img: 'https://i.pinimg.com/564x/80/b8/d5/80b8d512df7325fce3d027bc0bb1118c.jpg',
-  //   name: 'UNTOLD',
-  //   date: 'October 1-4, 2023',
-  //   price: '$150 - $300',
-  //   ticketCategories: [
-  //     { id: 1, description: 'General Admission' },
-  //     { id: 2, description: 'VIP' },
-  //   ],
 
   }
 
@@ -149,7 +168,7 @@ async function fetchOrders(customerID){
   };
 
   const createEventElement = (eventData, title) => {
-    const {eventID, eventDescription, img, eventName, ticketCategory, startDate, endDate, venueDTO} = eventData;
+    const {eventID, eventDescription, eventName, ticketCategory, startDate, endDate, venueDTO} = eventData;
     const eventDiv = document.createElement('div');
     const eventWrapperClasses = usesStyles('eventWrapper');
     const actionsWrapperClasses = usesStyles('actionsWrapper');
@@ -159,6 +178,8 @@ async function fetchOrders(customerID){
     const increaseBtnClasses = usesStyles('increaseBtn');
     const decreaseBtnClasses = usesStyles('decreaseBtn');
     const addToCartBtnClasses = usesStyles('addToCartBtn');
+
+    eventDiv.style.borderRadius = '16px';
 
     // Set up event wrapper
     eventDiv.classList.add(...eventWrapperClasses);
@@ -177,6 +198,12 @@ async function fetchOrders(customerID){
       <p class="description ">${eventDescription}</p>
       <p class="date text-gray-700 text-sm">Date: ${formattedStartDate} - ${formattedEndDate}</p>
       <p class="venue text-gray-700 text-sm">Location: ${venueDTO.location}</p>
+      <ul class="ticket-categories text-gray-700 text-sm">
+                ${ticketCategory.map(category => `
+                    <li>${category.description}: $${category.price}</li>
+                `).join('')}
+            </ul>
+
     </div>
     `;
   eventDiv.innerHTML = contentMarkup;
@@ -187,8 +214,6 @@ async function fetchOrders(customerID){
 
   const categoriesOptions = ticketCategory.map((category) =>
   `<option value=${category.ticketCategoryID}>${category.description}</option>`);
-  console.log(categoriesOptions);
-
 
   const locationSection = createSectionWithIcon('./src/assets/stellar.jpg', `<p class="event-location ">${venueDTO.location}</p>`);
 
@@ -200,7 +225,7 @@ async function fetchOrders(customerID){
     </select>
   `);
 
-  const allSectionsMarkup = descSection + locationSection + ticketSection;
+  const allSectionsMarkup = descSection + locationSection + ticketSection ;
   actions.innerHTML = allSectionsMarkup;
   
   const ticketTypeMarkup = `
@@ -209,8 +234,6 @@ async function fetchOrders(customerID){
     ${categoriesOptions.join('\n')}
   </select>`;
 
-
-      console.log(categoriesOptions);
 
   actions.innerHTML = ticketTypeMarkup;
 
@@ -356,13 +379,11 @@ const handleAddToCart = (title, eventID, input, addToCart) => {
       })
     }).then((data)=>{
       addPurchase(data);
-      console.log("Done!");
       input.value = 0;
       addToCart.disabled = true;
       toastr.success('Success!')
     })
       .catch(error => {
-        console.log('mesaj specific');
         toastr.error('Error!')
       })
       .finally(() => {
@@ -423,3 +444,5 @@ setupNavigationEvents();
 setupMobileMenuEvent();
 setupPopstateEvent();
 setupInitialPage();
+setupFilterEvents();
+
